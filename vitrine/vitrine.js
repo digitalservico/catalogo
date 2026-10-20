@@ -150,7 +150,7 @@ window.aplicarFiltrosEBusca = function () {
                 }
             }
 
-            window.location.href = `produto/produto.html?id=${prod.id}`;
+            window.location.href = `../produto/produto.html?id=${prod.id}`;
         });
 
         let htmlImagens = `<div class="produto-imagens" id="galeria-${indexProd}">`;
