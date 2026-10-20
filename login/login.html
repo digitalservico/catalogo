@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso Restrito - Login & Cadastro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+    <div class="faixa-topo-omega">
+        <span>ÁREA DE ACESSO RESTRITO</span>
+        <span class="separador">•</span>
+        <span>BOUTIQUE & ATACADO EXCLUSIVO</span>
+    </div>
+
+    <header class="login-header">
+        <a href="../index.html" class="logo-link">
+            <h1 class="marca-titulo" id="login-titulo-loja">Vittoriana</h1>
+            <span class="marca-subtitulo">PORTAL DE ACESSO</span>
+        </a>
+    </header>
+
+    <main class="container-login">
+        <div class="breadcrumb-container">
+            <a href="../index.html" class="btn-voltar">&#8592; Voltar à Vitrine</a>
+        </div>
+
+        <div class="login-cards-grid">
+            <!-- OPÇÃO 1: ASSINANTES (LOGIN / CADASTRO) -->
+            <div class="card-login destaque-assinante">
+                <div class="card-login-header">
+                    <span class="badge-opcao" id="badge-modo-titulo">OPÇÃO 1 • CLUBE EXCLUSIVO</span>
+                    <h2 id="titulo-form-auth">👑 Entrar como Assinante</h2>
+                    <p id="subtitulo-form-auth">Aceda às coleções privadas e preços de atacado do clube.</p>
+                </div>
+                
+                <!-- LOGIN -->
+                <form id="form-login-assinante" onsubmit="autenticarAssinante(event)">
+                    <div class="form-grupo">
+                        <label for="login-whatsapp">Telefone / WhatsApp</label>
+                        <input type="text" id="login-whatsapp" required placeholder="Ex: 62999999999">
+                    </div>
+                    <div class="form-grupo">
+                        <label for="senha-assinante">Palavra-passe</label>
+                        <input type="password" id="senha-assinante" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-ouro-login">Entrar no Clube Exclusivo</button>
+                    
+                    <div style="text-align: center; margin-top: 15px;">
+                        <button type="button" onclick="alternarModoLoginCadastro()" style="background: none; border: none; color: #8c7355; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: underline;">
+                            Não tem conta? Clique aqui para se cadastrar
+                        </button>
+                    </div>
+                </form>
+
+                <!-- CADASTRO (NOME, SOBRENOME, TELEFONE, SENHA) -->
+                <form id="form-cadastro-assinante" onsubmit="cadastrarNovoAssinante(event)" style="display: none;">
+                    <div class="form-linha" style="display: flex; gap: 10px;">
+                        <div class="form-grupo" style="flex: 1;">
+                            <label for="cad-nome">Nome *</label>
+                            <input type="text" id="cad-nome" required placeholder="Ex: Maria">
+                        </div>
+                        <div class="form-grupo" style="flex: 1;">
+                            <label for="cad-sobrenome">Sobrenome *</label>
+                            <input type="text" id="cad-sobrenome" required placeholder="Ex: Silva">
+                        </div>
+                    </div>
+
+                    <div class="form-grupo">
+                        <label for="cad-whatsapp">WhatsApp (com DDD) *</label>
+                        <input type="text" id="cad-whatsapp" required placeholder="Ex: 62999999999">
+                    </div>
+
+                    <div class="form-grupo">
+                        <label for="cad-senha">Crie sua Palavra-passe *</label>
+                        <input type="password" id="cad-senha" required placeholder="••••••••">
+                    </div>
+
+                    <button type="submit" class="btn-ouro-login">Solicitar Cadastro no Clube</button>
+                    
+                    <div style="text-align: center; margin-top: 15px;">
+                        <button type="button" onclick="alternarModoLoginCadastro()" style="background: none; border: none; color: #8c7355; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: underline;">
+                            Já tem conta? Clique aqui para entrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- OPÇÃO 2: GESTÃO -->
+            <div class="card-login opcao-gestao">
+                <div class="card-login-header">
+                    <span class="badge-opcao-gestao">OPÇÃO 2 • ADMINISTRAÇÃO</span>
+                    <h2>⚙️ Proprietária & Gestão</h2>
+                    <p>Acesso exclusivo à gestão de produtos, preços, marcas e configurações.</p>
+                </div>
+                <form id="form-login-gestao" onsubmit="autenticarProprietaria(event)">
+                    <div class="form-grupo">
+                        <label for="senha-gestao">Palavra-passe Administrativa</label>
+                        <input type="password" id="senha-gestao" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn-escuro-login">Ir para o Painel de Gestão</button>
+                </form>
+            </div>
+        </div>
+    </main>
+    <script src="login.js"></script>
+</body>
+</html>
