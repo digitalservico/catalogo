@@ -5,6 +5,44 @@ let filtrosSalvos = JSON.parse(localStorage.getItem('filtros_cadastrados')) || [
 let clientes = JSON.parse(localStorage.getItem('clientes_cadastrados')) || []; 
 let contatosDivulgacao = JSON.parse(localStorage.getItem('contatos_divulgacao_cadastrados')) || []; 
 
+// FUNÇÃO DE SINCRONIZAÇÃO AUTOMÁTICA COM O BACKUP DO SERVIDOR (GITHUB)
+async function sincronizarBackupComServidor() {
+    try {
+        const resposta = await fetch('backup_vittoriana_2026-10-20.json');
+        if (!resposta.ok) return;
+
+        const backup = await resposta.json();
+
+        if (backup.config) {
+            if (backup.config.nomeLoja) localStorage.setItem('nome_loja_vittoriana', backup.config.nomeLoja);
+            if (backup.config.diasAssinatura) localStorage.setItem('dias_validade_assinatura', backup.config.diasAssinatura);
+            if (backup.config.whatsappLoja) localStorage.setItem('whatsapp_loja_vittoriana', backup.config.whatsappLoja);
+            if (backup.config.faixaTopo) localStorage.setItem('faixa_topo_vittoriana', backup.config.faixaTopo);
+        }
+        if (backup.senhaAdmin) {
+            localStorage.setItem('senha_admin_vittoriana', backup.senhaAdmin);
+        }
+        if (backup.filtros) {
+            localStorage.setItem('filtros_cadastrados', JSON.stringify(backup.filtros));
+            filtrosSalvos = backup.filtros;
+        }
+        if (backup.produtos) {
+            localStorage.setItem('produtos_cadastrados', JSON.stringify(backup.produtos));
+            produtos = backup.produtos;
+        }
+        if (backup.clientes) {
+            localStorage.setItem('clientes_cadastrados', JSON.stringify(backup.clientes));
+            clientes = backup.clientes;
+        }
+        if (backup.contatosDivulgacao) {
+            localStorage.setItem('contatos_divulgacao_cadastrados', JSON.stringify(backup.contatosDivulgacao));
+            contatosDivulgacao = backup.contatosDivulgacao;
+        }
+    } catch (erro) {
+        console.log("Arquivo de backup local não encontrado ou modo offline.");
+    }
+}
+
 function carregarConfiguracoesLoja() {
     let nomeLoja = localStorage.getItem('nome_loja_vittoriana') || 'Vittoriana';
     let diasAssinatura = localStorage.getItem('dias_validade_assinatura') || '30';
@@ -66,7 +104,7 @@ window.baixarBackupJSON = function() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dadosBackup, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `backup_vittoriana_${new Date().toISOString().split('T')[0]}.json`);
+    downloadAnchor.setAttribute("download", `backup_vittoriana_2026-10-20.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -681,10 +719,13 @@ window.excluirProduto = function(id) {
     }
 };
 
-carregarConfiguracoesLoja();
-renderizarProdutos();
-renderizarFiltrosFormulario();
-renderizarClientesAssinantes();
-renderizarContatosDivulgacao();
-renderizarCheckboxDivulgacaoClientes();
-renderizarCheckboxDivulgacaoProdutos();
+// Executa a sincronização com o backup e atualiza a interface
+sincronizarBackupComServidor().then(() => {
+    carregarConfiguracoesLoja();
+    renderizarProdutos();
+    renderizarFiltrosFormulario();
+    renderizarClientesAssinantes();
+    renderizarContatosDivulgacao();
+    renderizarCheckboxDivulgacaoClientes();
+    renderizarCheckboxDivulgacaoProdutos();
+});
