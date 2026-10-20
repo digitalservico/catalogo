@@ -142,6 +142,7 @@ window.autenticarProprietaria = function(event) {
     const senhaAdminSalva = localStorage.getItem('senha_admin_vittoriana') || 'admin123';
 
     if (senhaInformada === senhaAdminSalva) {
+        localStorage.setItem('admin_logado', 'true');
         alert('✦ Autenticação bem-sucedida!\nRedirecionando para o Painel de Controle e Gestão...');
         window.location.href = '../index.html';
     } else {
