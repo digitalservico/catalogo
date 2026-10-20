@@ -1,4 +1,31 @@
-document.addEventListener("DOMContentLoaded", function () {
+// FUNÇÃO DE SINCRONIZAÇÃO AUTOMÁTICA COM O BACKUP DO SERVIDOR (GITHUB) NA PÁGINA DO PRODUTO
+async function sincronizarBackupProduto() {
+    try {
+        const resposta = await fetch('../backup_vittoriana_2026-10-20.json');
+        if (!resposta.ok) return;
+
+        const backup = await resposta.json();
+
+        if (backup.config) {
+            if (backup.config.nomeLoja) localStorage.setItem('nome_loja_vittoriana', backup.config.nomeLoja);
+            if (backup.config.faixaTopo) localStorage.setItem('faixa_topo_vittoriana', backup.config.faixaTopo);
+            if (backup.config.whatsappLoja) localStorage.setItem('whatsapp_loja_vittoriana', backup.config.whatsappLoja);
+        }
+        if (backup.produtos) {
+            localStorage.setItem('produtos_cadastrados', JSON.stringify(backup.produtos));
+        }
+        if (backup.clientes) {
+            localStorage.setItem('clientes_cadastrados', JSON.stringify(backup.clientes));
+        }
+    } catch (erro) {
+        console.log("Arquivo de backup local não encontrado ou modo offline na página do produto.");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async function () {
+    // Sincroniza o backup antes de renderizar o produto
+    await sincronizarBackupProduto();
+
     // Atualiza título da aba, nome da loja e faixa superior dinamicamente
     const nomeLoja = localStorage.getItem('nome_loja_vittoriana');
     if (nomeLoja) {
