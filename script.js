@@ -1,83 +1,107 @@
-// --- MÓDULO DE GESTÃO DA LOJA, PRODUTOS, ASSINANTES E DIVULGAÇÃO (COM NUVEM) ---
+// --- MÓDULO DE GESTÃO COM JSONBIN.IO INTEGRADO (FIXO) ---
+
+const JSONBIN_ID = '6ad6a909ffd5d160537a6186';
+const JSONBIN_KEY = '$2a$10$9P1mubytn4WC6yPQaxkDZejArdlPRGO06EoDYnqB6fyvkM5muZq1K';
 
 let produtos = [];
 let filtrosSalvos = ['Camisa', 'Blusa', 'Vestido', 'Calça'];
 let clientes = []; 
-let contatosDivulgacao = [];
+let contatosDivulgacao = []; 
 
-// Carrega os dados da nuvem ao abrir a página
-async function inicializarSistemaDaNuvem() {
-    const dadosNuvem = await carregarDadosDaNuvem();
-    if (dadosNuvem) {
-        produtos = dadosNuvem.produtos || [];
-        
-        if (dadosNuvem.clientes) {
-            try {
-                clientes = JSON.parse(descriptografar(dadosNuvem.clientes));
-            } catch (e) {
-                clientes = [];
+async function carregarDadosDaNuvem() {
+    try {
+        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
+            headers: {
+                'X-Master-Key': JSONBIN_KEY
             }
-        }
-        
-        if (dadosNuvem.contatosDivulgacao) {
-            try {
-                contatosDivulgacao = JSON.parse(descriptografar(dadosNuvem.contatosDivulgacao));
-            } catch (e) {
-                contatosDivulgacao = [];
-            }
-        }
+        });
 
-        // Configurações da Loja
-        if (dadosNuvem.config) {
-            if (dadosNuvem.config.nome) localStorage.setItem('nome_loja_vittoriana', dadosNuvem.config.nome);
-            if (dadosNuvem.config.dias) localStorage.setItem('dias_validade_assinatura', dadosNuvem.config.dias);
-            if (dadosNuvem.config.whatsapp) localStorage.setItem('whatsapp_loja_vittoriana', dadosNuvem.config.whatsapp);
+        if (resposta.ok) {
+            const resultado = await resposta.json();
+            const dados = resultado.record || {};
+
+            produtos = Array.isArray(dados.produtos) ? dados.produtos : [];
+            filtrosSalvos = Array.isArray(dados.filtros) && dados.filtros.length > 0 ? dados.filtros : ['Camisa', 'Blusa', 'Vestido', 'Calça'];
+            clientes = Array.isArray(dados.clientes) ? dados.clientes : [];
+            contatosDivulgacao = Array.isArray(dados.contatosDivulgacao) ? dados.contatosDivulgacao : [];
+
+            if (dados.config) {
+                if (dados.config.nomeLoja) localStorage.setItem('nome_loja_vittoriana', dados.config.nomeLoja);
+                if (dados.config.diasAssinatura) localStorage.setItem('dias_validade_assinatura', dados.config.diasAssinatura);
+                if (dados.config.whatsappLoja) localStorage.setItem('whatsapp_loja_vittoriana', dados.config.whatsappLoja);
+                if (dados.config.faixaTopo) localStorage.setItem('faixa_topo_vittoriana', dados.config.faixaTopo);
+            }
+            if (dados.senhaAdmin) localStorage.setItem('senha_admin_vittoriana', dados.senhaAdmin);
+        } else {
+            carregarLocalFallback();
         }
+    } catch (e) {
+        carregarLocalFallback();
     }
 
-    carregarConfiguracoesLoja();
-    renderizarProdutos();
-    renderizarFiltrosFormulario();
-    renderizarClientesAssinantes();
-    renderizarContatosDivulgacao();
-    renderizarCheckboxDivulgacaoClientes();
-    renderizarCheckboxDivulgacaoProdutos();
+    inicializarInterface();
 }
 
-// Função centralizada para salvar tudo na nuvem automaticamente
-async function persistirTudoNaNuvem() {
-    let nomeLoja = localStorage.getItem('nome_loja_vittoriana') || 'Vittoriana';
-    let diasAssinatura = localStorage.getItem('dias_validade_assinatura') || '30';
-    let whatsappLoja = localStorage.getItem('whatsapp_loja_vittoriana') || '';
+function carregarLocalFallback() {
+    produtos = JSON.parse(localStorage.getItem('produtos_cadastrados')) || [];
+    filtrosSalvos = JSON.parse(localStorage.getItem('filtros_cadastrados')) || ['Camisa', 'Blusa', 'Vestido', 'Calça'];
+    clientes = JSON.parse(localStorage.getItem('clientes_cadastrados')) || [];
+    contatosDivulgacao = JSON.parse(localStorage.getItem('contatos_divulgacao_cadastrados')) || [];
+}
 
-    const pacoteDados = {
-        produtos: produtos,
-        clientes: clientes,
-        contatosDivulgacao: contatosDivulgacao,
+async function sincronizarComNuvem() {
+    localStorage.setItem('produtos_cadastrados', JSON.stringify(produtos));
+    localStorage.setItem('filtros_cadastrados', JSON.stringify(filtrosSalvos));
+    localStorage.setItem('clientes_cadastrados', JSON.stringify(clientes));
+    localStorage.setItem('contatos_divulgacao_cadastrados', JSON.stringify(contatosDivulgacao));
+
+    const payload = {
         config: {
-            nome: nomeLoja,
-            dias: diasAssinatura,
-            whatsapp: whatsappLoja
-        }
+            nomeLoja: localStorage.getItem('nome_loja_vittoriana') || 'Vittoriana',
+            diasAssinatura: localStorage.getItem('dias_validade_assinatura') || '30',
+            whatsappLoja: localStorage.getItem('whatsapp_loja_vittoriana') || '',
+            faixaTopo: localStorage.getItem('faixa_topo_vittoriana') || ''
+        },
+        senhaAdmin: localStorage.getItem('senha_admin_vittoriana') || 'admin123',
+        produtos: produtos,
+        filtros: filtrosSalvos,
+        clientes: clientes,
+        contatosDivulgacao: contatosDivulgacao
     };
 
-    await salvarDadosNaNuvem(pacoteDados);
+    try {
+        await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': JSONBIN_KEY
+            },
+            body: JSON.stringify(payload)
+        });
+    } catch (e) {
+        console.error("Erro ao sincronizar com o JSONBin:", e);
+    }
 }
 
 function carregarConfiguracoesLoja() {
     let nomeLoja = localStorage.getItem('nome_loja_vittoriana') || 'Vittoriana';
     let diasAssinatura = localStorage.getItem('dias_validade_assinatura') || '30';
     let whatsappLoja = localStorage.getItem('whatsapp_loja_vittoriana') || '';
+    let faixaTopo = localStorage.getItem('faixa_topo_vittoriana') || '5% NA PRIMEIRA COMPRA COM O CUPOM: VITTORIANA5 • NOVIDADES EXCLUSIVAS ATACADO • ENVIO SEGURO PARA TODO O BRASIL';
 
     const elementoTitulo = document.getElementById('painel-titulo-loja');
     const inputLoja = document.getElementById('input-nome-loja');
     const inputDias = document.getElementById('input-dias-assinatura');
     const inputWhatsapp = document.getElementById('input-whatsapp-loja');
+    const inputFaixa = document.getElementById('input-faixa-topo');
     
     if (elementoTitulo) elementoTitulo.innerText = nomeLoja;
     if (inputLoja) inputLoja.value = nomeLoja;
     if (inputDias) inputDias.value = diasAssinatura;
     if (inputWhatsapp) inputWhatsapp.value = whatsappLoja;
+    if (inputFaixa) inputFaixa.value = faixaTopo;
+
+    document.title = `${nomeLoja} - Painel de Gestão`;
 }
 
 window.salvarConfiguracoesLoja = async function(e) {
@@ -85,45 +109,112 @@ window.salvarConfiguracoesLoja = async function(e) {
     const novoNome = document.getElementById('input-nome-loja').value.trim();
     const novosDias = document.getElementById('input-dias-assinatura').value.trim();
     const novoWhatsapp = document.getElementById('input-whatsapp-loja').value.trim().replace(/\D/g, '');
+    const novaFaixa = document.getElementById('input-faixa-topo').value.trim();
 
     if (!novoNome) return;
 
     localStorage.setItem('nome_loja_vittoriana', novoNome);
     localStorage.setItem('dias_validade_assinatura', novosDias || '30');
     localStorage.setItem('whatsapp_loja_vittoriana', novoWhatsapp);
+    localStorage.setItem('faixa_topo_vittoriana', novaFaixa);
     
     carregarConfiguracoesLoja();
-    await persistirTudoNaNuvem();
-    alert("✦ Configurações e WhatsApp da loja salvos com sucesso!");
+    await sincronizarComNuvem();
+    alert("✦ Configurações salvas e sincronizadas na nuvem com sucesso!");
 };
 
-// --- ALTERAÇÃO DE SENHA DA ADMINISTRAÇÃO ---
-window.salvarNovaSenhaAdmin = function(e) {
+window.baixarBackupJSON = function() {
+    const dadosBackup = {
+        versao: "1.0",
+        dataBackup: new Date().toISOString(),
+        config: {
+            nomeLoja: localStorage.getItem('nome_loja_vittoriana') || 'Vittoriana',
+            diasAssinatura: localStorage.getItem('dias_validade_assinatura') || '30',
+            whatsappLoja: localStorage.getItem('whatsapp_loja_vittoriana') || '',
+            faixaTopo: localStorage.getItem('faixa_topo_vittoriana') || ''
+        },
+        senhaAdmin: localStorage.getItem('senha_admin_vittoriana') || 'admin123',
+        produtos: produtos,
+        filtros: filtrosSalvos,
+        clientes: clientes,
+        contatosDivulgacao: contatosDivulgacao
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dadosBackup, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `backup_vittoriana_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+};
+
+window.importarBackupJSON = async function(event) {
+    const arquivo = event.target.files[0];
+    if (!arquivo) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const backup = JSON.parse(e.target.result);
+
+            if (!backup.config || !backup.produtos) {
+                alert("❌ O arquivo selecionado não é um backup válido.");
+                return;
+            }
+
+            if (confirm("Deseja restaurar este backup? Os dados serão mesclados na nuvem.")) {
+                localStorage.setItem('nome_loja_vittoriana', backup.config.nomeLoja);
+                localStorage.setItem('dias_validade_assinatura', backup.config.diasAssinatura);
+                localStorage.setItem('whatsapp_loja_vittoriana', backup.config.whatsappLoja);
+                localStorage.setItem('faixa_topo_vittoriana', backup.config.faixaTopo);
+                if (backup.senhaAdmin) localStorage.setItem('senha_admin_vittoriana', backup.senhaAdmin);
+
+                filtrosSalvos = Array.from(new Set([...filtrosSalvos, ...(backup.filtros || [])]));
+                
+                let mapaProdutos = new Map(produtos.map(p => [p.id, p]));
+                (backup.produtos || []).forEach(p => mapaProdutos.set(p.id, p));
+                produtos = Array.from(mapaProdutos.values());
+
+                let mapaClientes = new Map(clientes.map(c => [c.whatsapp, c]));
+                (backup.clientes || []).forEach(c => {
+                    if (!mapaClientes.has(c.whatsapp)) mapaClientes.set(c.whatsapp, c);
+                });
+                clientes = Array.from(mapaClientes.values());
+
+                let mapaContatos = new Map(contatosDivulgacao.map(c => [c.whatsapp, c]));
+                (backup.contatosDivulgacao || []).forEach(c => {
+                    if (!mapaContatos.has(c.whatsapp)) mapaContatos.set(c.whatsapp, c);
+                });
+                contatosDivulgacao = Array.from(mapaContatos.values());
+
+                await sincronizarComNuvem();
+                alert("✦ Backup restaurado e sincronizado com a nuvem!");
+                location.reload();
+            }
+        } catch (err) {
+            alert("❌ Erro ao ler o arquivo JSON.");
+        }
+    };
+    reader.readAsText(arquivo);
+};
+
+window.salvarNovaSenhaAdmin = async function(e) {
     e.preventDefault();
     const novaSenha = document.getElementById('input-nova-senha').value.trim();
     const confirmaSenha = document.getElementById('input-confirma-senha').value.trim();
 
-    if (!novaSenha || !confirmaSenha) {
-        alert("❌ Preencha ambos os campos de senha.");
-        return;
-    }
-
-    if (novaSenha !== confirmaSenha) {
-        alert("❌ As senhas não coincidem. Verifique e tente novamente.");
-        return;
-    }
-
-    if (novaSenha.length < 4) {
-        alert("⚠️ Por segurança, a senha deve ter pelo menos 4 caracteres.");
+    if (!novaSenha || novaSenha !== confirmaSenha || novaSenha.length < 4) {
+        alert("❌ As senhas não coincidem ou são muito curtas.");
         return;
     }
 
     localStorage.setItem('senha_admin_vittoriana', novaSenha);
     document.getElementById('form-alterar-senha-admin').reset();
+    await sincronizarComNuvem();
     alert("✦ Palavra-passe administrativa alterada com sucesso!");
 };
 
-// --- GESTÃO DE CLIENTES ASSINANTES ---
 window.alternarStatusCliente = async function(id) {
     clientes = clientes.map(c => {
         if (c.id === id) {
@@ -131,7 +222,7 @@ window.alternarStatusCliente = async function(id) {
         }
         return c;
     });
-    await persistirTudoNaNuvem();
+    await sincronizarComNuvem();
     renderizarClientesAssinantes();
     renderizarCheckboxDivulgacaoClientes();
 };
@@ -139,24 +230,21 @@ window.alternarStatusCliente = async function(id) {
 window.excluirClienteAssinante = async function(id) {
     if (confirm('Tem certeza que deseja remover este assinante?')) {
         clientes = clientes.filter(c => c.id !== id);
-        await persistirTudoNaNuvem();
+        await sincronizarComNuvem();
         renderizarClientesAssinantes();
         renderizarCheckboxDivulgacaoClientes();
     }
 };
 
 window.enviarAprovacaoWhatsApp = function(whatsapp, nome) {
-    const mensagem = `Olá *${nome}*! Seu cadastro e acesso ao Clube Exclusivo Vittoriana foram **APROVADOS**! 🎉✨ Já pode acessar a nossa vitrine restrita e aproveitar os preços de atacado. Seja muito bem-vindo(a)! 🛍️👑`;
+    const mensagem = `Olá *${nome}*! Seu cadastro e acesso ao Clube Exclusivo Vittoriana foram **APROVADOS**! 🎉✨ Já pode acessar a nossa vitrine restrita. Seja muito bem-vindo(a)! 🛍️👑`;
     window.open(`https://wa.me/55${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(mensagem)}`, '_blank');
 };
 
 window.enviarAvisoVencimento = function(whatsapp, nome, diasRestantes) {
-    let mensagem = "";
-    if (diasRestantes < 0) {
-        mensagem = `Olá *${nome}*! Notamos que sua assinatura do Clube Exclusivo Vittoriana venceu há ${Math.abs(diasRestantes)} dias. Renove agora para continuar aproveitando os preços de atacado! 👑🛍️`;
-    } else {
-        mensagem = `Olá *${nome}*! Passando para lembrar que sua assinatura do Clube Exclusivo Vittoriana vence em *${diasRestantes} dias*. Garanta sua renovação! 👑🛍️`;
-    }
+    let mensagem = diasRestantes < 0 ? 
+        `Olá *${nome}*! Sua assinatura venceu há ${Math.abs(diasRestantes)} dias. Renove agora! 👑🛍️` : 
+        `Olá *${nome}*! Sua assinatura vence em *${diasRestantes} dias*. Garanta sua renovação! 👑🛍️`;
     window.open(`https://wa.me/55${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(mensagem)}`, '_blank');
 };
 
@@ -175,7 +263,6 @@ function renderizarClientesAssinantes() {
     clientes.forEach(c => {
         const tr = document.createElement('tr');
         const badgeStatusCor = c.status === 'Ativo' ? 'background: rgba(46, 125, 50, 0.1); color: #2e7d32;' : 'background: rgba(239, 108, 0, 0.1); color: #ef6c00;';
-        
         let infoSenha = c.senha ? `<br><small style="color: #b89353; font-weight: 600;">🔑 Senha: ${c.senha}</small>` : '';
 
         let infoVencimento = "";
@@ -184,34 +271,24 @@ function renderizarClientesAssinantes() {
             const dataVenc = new Date(c.vencimento + 'T00:00:00');
             const diffTime = dataVenc - hoje;
             diasRestantes = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diasRestantes < 0) {
-                infoVencimento = `<br><span style="color: #d9534f; font-weight: 600; font-size: 10px;">⚠️ Vencido há ${Math.abs(diasRestantes)} dias (${c.vencimento})</span>`;
-            } else if (diasRestantes === 0) {
-                infoVencimento = `<br><span style="color: #f0ad4e; font-weight: 600; font-size: 10px;">⚠️ Vence HOJE!</span>`;
-            } else {
-                infoVencimento = `<br><span style="color: #8c7355; font-size: 10px;">Vence em ${diasRestantes} dias (${c.vencimento})</span>`;
-            }
-        } else {
-            infoVencimento = `<br><span style="color: #999; font-size: 10px;">Sem vencimento definido</span>`;
+            infoVencimento = diasRestantes < 0 ? 
+                `<br><span style="color: #d9534f; font-weight: 600; font-size: 10px;">⚠️ Vencido há ${Math.abs(diasRestantes)} dias</span>` : 
+                `<br><span style="color: #8c7355; font-size: 10px;">Vence em ${diasRestantes} dias</span>`;
         }
 
         tr.innerHTML = `
             <td>
                 <strong style="font-size: 13px; color: #2b2b2b;">${c.nome}</strong><br>
-                <small style="color: #666;">📱 ${c.whatsapp}</small>
-                ${infoSenha}
+                <small style="color: #666;">📱 ${c.whatsapp}</small>${infoSenha}
             </td>
             <td style="text-align: center;">
-                <span onclick="alternarStatusCliente(${c.id})" style="cursor: pointer; padding: 3px 8px; border-radius: 2px; font-weight: 600; font-size: 10px; ${badgeStatusCor}" title="Clique para alternar status">
-                    ${c.status}
-                </span>
+                <span onclick="alternarStatusCliente(${c.id})" style="cursor: pointer; padding: 3px 8px; border-radius: 2px; font-weight: 600; font-size: 10px; ${badgeStatusCor}" title="Clique para alternar">${c.status}</span>
                 ${infoVencimento}
             </td>
             <td>
                 <div class="btn-acao-container" style="flex-wrap: wrap;">
-                    <button class="btn-acao btn-editar" onclick="enviarAprovacaoWhatsApp('${c.whatsapp}', '${c.nome}')" title="Aprovar no WhatsApp">Aprovar Zap</button>
-                    ${c.vencimento ? `<button class="btn-acao btn-editar" onclick="enviarAvisoVencimento('${c.whatsapp}', '${c.nome}',${diasRestantes})" title="Avisar vencimento">Cobrar</button>` : ''}
+                    <button class="btn-acao btn-editar" onclick="enviarAprovacaoWhatsApp('${c.whatsapp}', '${c.nome}')">Aprovar Zap</button>
+                    ${c.vencimento ? `<button class="btn-acao btn-editar" onclick="enviarAvisoVencimento('${c.whatsapp}', '${c.nome}',${diasRestantes})">Cobrar</button>` : ''}
                     <button class="btn-acao btn-excluir" onclick="excluirClienteAssinante(${c.id})">Excluir</button>
                 </div>
             </td>
@@ -220,7 +297,6 @@ function renderizarClientesAssinantes() {
     });
 }
 
-// --- GESTÃO DE CONTATOS DE DIVULGAÇÃO ---
 window.cadastrarContatoDivulgacao = async function(e) {
     e.preventDefault();
     const nome = document.getElementById('div-nome').value.trim();
@@ -228,20 +304,19 @@ window.cadastrarContatoDivulgacao = async function(e) {
 
     if (!nome || !whatsapp) return;
 
-    const novoContato = { id: Date.now(), nome, whatsapp };
-    contatosDivulgacao.push(novoContato);
+    contatosDivulgacao.push({ id: Date.now(), nome, whatsapp });
+    await sincronizarComNuvem();
     
-    await persistirTudoNaNuvem();
     document.getElementById('form-divulgacao').reset();
     renderizarContatosDivulgacao();
     renderizarCheckboxDivulgacaoClientes();
-    alert(`✦ Contato de divulgação ${nome} cadastrado com sucesso!`);
+    alert(`✦ Contato ${nome} cadastrado com sucesso!`);
 };
 
 window.excluirContatoDivulgacao = async function(id) {
-    if (confirm('Tem certeza que deseja remover este contato de divulgação?')) {
+    if (confirm('Tem certeza que deseja remover este contato?')) {
         contatosDivulgacao = contatosDivulgacao.filter(c => c.id !== id);
-        await persistirTudoNaNuvem();
+        await sincronizarComNuvem();
         renderizarContatosDivulgacao();
         renderizarCheckboxDivulgacaoClientes();
     }
@@ -260,13 +335,8 @@ function renderizarContatosDivulgacao() {
     contatosDivulgacao.forEach(c => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>
-                <strong style="font-size: 12px; color: #2b2b2b;">${c.nome}</strong><br>
-                <small style="color: #666;">📱 ${c.whatsapp}</small>
-            </td>
-            <td style="text-align: center;">
-                <button class="btn-acao btn-excluir" onclick="excluirContatoDivulgacao(${c.id})">Excluir</button>
-            </td>
+            <td><strong style="font-size: 12px; color: #2b2b2b;">${c.nome}</strong><br><small style="color: #666;">📱 ${c.whatsapp}</small></td>
+            <td style="text-align: center;"><button class="btn-acao btn-excluir" onclick="excluirContatoDivulgacao(${c.id})">Excluir</button></td>
         `;
         tbody.appendChild(tr);
     });
@@ -275,48 +345,37 @@ function renderizarContatosDivulgacao() {
 function renderizarCheckboxDivulgacaoClientes() {
     const container = document.getElementById('div-selecao-clientes');
     if (!container) return;
+    container.innerHTML = '';
 
     if (clientes.length === 0 && contatosDivulgacao.length === 0) {
         container.innerHTML = `<small style="color: #888;">Nenhum cliente ou contato cadastrado.</small>`;
         return;
     }
 
-    container.innerHTML = '';
-
     if (clientes.length > 0) {
-        const tituloAssinantes = document.createElement('div');
-        tituloAssinantes.style.cssText = "font-size: 10px; font-weight: 600; color: #8c7355; text-transform: uppercase; margin: 4px 0;";
-        tituloAssinantes.innerText = "👑 Assinantes do Clube";
-        container.appendChild(tituloAssinantes);
+        const t1 = document.createElement('div');
+        t1.style.cssText = "font-size: 10px; font-weight: 600; color: #8c7355; text-transform: uppercase; margin: 4px 0;";
+        t1.innerText = "👑 Assinantes do Clube";
+        container.appendChild(t1);
 
         clientes.forEach(c => {
             const div = document.createElement('div');
             div.style.cssText = "display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; padding-left: 6px;";
-            div.innerHTML = `
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; text-transform: none; font-weight: 400; color: #333;">
-                    <input type="checkbox" value="${c.whatsapp}" data-nome="${c.nome}" class="check-cliente-div">
-                    <strong>${c.nome}</strong> (Assinante) - <span style="font-size: 10px; color: ${c.status === 'Ativo' ? '#2e7d32' : '#ef6c00'};">${c.status}</span>
-                </label>
-            `;
+            div.innerHTML = `<label style="display: flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" value="${c.whatsapp}" data-nome="${c.nome}" class="check-cliente-div"><strong>${c.nome}</strong> (Assinante)</label>`;
             container.appendChild(div);
         });
     }
 
     if (contatosDivulgacao.length > 0) {
-        const tituloDivulgacao = document.createElement('div');
-        tituloDivulgacao.style.cssText = "font-size: 10px; font-weight: 600; color: #8c7355; text-transform: uppercase; margin: 8px 0 4px 0;";
-        tituloDivulgacao.innerText = "📢 Contatos de Divulgação (Avulsos)";
-        container.appendChild(tituloDivulgacao);
+        const t2 = document.createElement('div');
+        t2.style.cssText = "font-size: 10px; font-weight: 600; color: #8c7355; text-transform: uppercase; margin: 8px 0 4px 0;";
+        t2.innerText = "📢 Contatos de Divulgação";
+        container.appendChild(t2);
 
         contatosDivulgacao.forEach(c => {
             const div = document.createElement('div');
             div.style.cssText = "display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; padding-left: 6px;";
-            div.innerHTML = `
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; text-transform: none; font-weight: 400; color: #333;">
-                    <input type="checkbox" value="${c.whatsapp}" data-nome="${c.nome}" class="check-cliente-div">
-                    <strong>${c.nome}</strong> (Divulgação)
-                </label>
-            `;
+            div.innerHTML = `<label style="display: flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" value="${c.whatsapp}" data-nome="${c.nome}" class="check-cliente-div"><strong>${c.nome}</strong> (Divulgação)</label>`;
             container.appendChild(div);
         });
     }
@@ -325,118 +384,86 @@ function renderizarCheckboxDivulgacaoClientes() {
 function renderizarCheckboxDivulgacaoProdutos() {
     const container = document.getElementById('div-selecao-produtos');
     if (!container) return;
+    container.innerHTML = '';
 
     if (produtos.length === 0) {
         container.innerHTML = `<small style="color: #888;">Nenhum produto cadastrado.</small>`;
         return;
     }
 
-    container.innerHTML = '';
     produtos.forEach(p => {
         let precoTexto = `R$ ${p.valor.toFixed(2)}`;
-        if (p.emPromocao && p.valorPromo) {
-            precoTexto = `R$ ${p.valorPromo.toFixed(2)} (Promo)`;
-        }
+        if (p.emPromocao && p.valorPromo) precoTexto = `R$ ${p.valorPromo.toFixed(2)} (Promo)`;
 
         const div = document.createElement('div');
         div.style.cssText = "display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 12px;";
-        div.innerHTML = `
-            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; text-transform: none; font-weight: 400; color: #333;">
-                <input type="checkbox" value="${p.id}" class="check-produto-div">
-                <strong>${p.nome}</strong> - <span style="color: #8c7355; font-weight: 600;">${precoTexto}</span>
-            </label>
-        `;
+        div.innerHTML = `<label style="display: flex; align-items: center; gap: 6px; cursor: pointer;"><input type="checkbox" value="${p.id}" class="check-produto-div"><strong>${p.nome}</strong> - <span style="color: #8c7355; font-weight: 600;">${precoTexto}</span></label>`;
         container.appendChild(div);
     });
 }
 
-window.selecionarTodosClientes = function(marcar) {
-    document.querySelectorAll('.check-cliente-div').forEach(chk => chk.checked = marcar);
-};
-
-window.selecionarTodosProdutos = function(marcar) {
-    document.querySelectorAll('.check-produto-div').forEach(chk => chk.checked = marcar);
-};
+window.selecionarTodosClientes = (m) => document.querySelectorAll('.check-cliente-div').forEach(c => c.checked = m);
+window.selecionarTodosProdutos = (m) => document.querySelectorAll('.check-produto-div').forEach(c => c.checked = m);
 
 window.dispararDivulganaoWhatsApp = function() {
-    const clientesSelecionados = Array.from(document.querySelectorAll('.check-cliente-div:checked'));
-    const produtosSelecionados = Array.from(document.querySelectorAll('.check-produto-div:checked'));
+    const clSel = Array.from(document.querySelectorAll('.check-cliente-div:checked'));
+    const prSel = Array.from(document.querySelectorAll('.check-produto-div:checked'));
 
-    if (clientesSelecionados.length === 0 || produtosSelecionados.length === 0) {
-        alert('Selecione pelo menos um destinatário e um produto para divulgar.');
+    if (clSel.length === 0 || prSel.length === 0) {
+        alert('Selecione pelo menos um destinatário e um produto.');
         return;
     }
 
-    let listaTextosProdutos = [];
-    produtosSelecionados.forEach(chkProd => {
-        const prodObj = produtos.find(p => p.id == chkProd.value);
-        if (prodObj) {
-            let precoStr = `R$ ${prodObj.valor.toFixed(2).replace('.', ',')}`;
-            if (prodObj.emPromocao && prodObj.valorPromo) {
-                precoStr = `R$ ${prodObj.valorPromo.toFixed(2).replace('.', ',')} (Preço Clube Exclusivo)`;
-            }
-            listaTextosProdutos.push(`✨ *${prodObj.nome}*\n📝 ${prodObj.descricao || 'Peça exclusiva.'}\n💰 *${precoStr}*\n`);
+    let textosPr = [];
+    prSel.forEach(chk => {
+        const p = produtos.find(item => item.id == chk.value);
+        if (p) {
+            let prStr = `R$ ${p.valor.toFixed(2).replace('.', ',')}`;
+            if (p.emPromocao && p.valorPromo) prStr = `R$ ${p.valorPromo.toFixed(2).replace('.', ',')} (Preço Exclusivo)`;
+            textosPr.push(`✨ *${p.nome}*\n📝 ${p.descricao || 'Peça exclusiva.'}\n💰 *${prStr}*\n`);
         }
     });
 
-    const primeiroCliente = clientesSelecionados[0];
-    const nomeCliente = primeiroCliente.getAttribute('data-nome');
-    let numeroZap = primeiroCliente.value.replace(/\D/g, '');
-
-    let mensagem = `Olá *${nomeCliente}*! Selecionamos novidades exclusivas para você:\n\n`;
-    mensagem += listaTextosProdutos.join('\n-------------------\n\n');
-    mensagem += `\nGostaria de garantir as suas peças? Responda esta mensagem! 🛍️👑`;
-
-    window.open(`https://wa.me/55${numeroZap}?text=${encodeURIComponent(mensagem)}`, '_blank');
+    let mensagem = `Olá *${clSel[0].getAttribute('data-nome')}*! Selecionamos novidades para você:\n\n${textosPr.join('\n-------------------\n\n')}\nGostaria de garantir as suas peças? Responda aqui! 🛍️👑`;
+    window.open(`https://wa.me/55${clSel[0].value.replace(/\D/g, '')}?text=${encodeURIComponent(mensagem)}`, '_blank');
 };
 
-function renderizarFiltrosFormulario(filtrosSelecionados = []) {
+function renderizarFiltrosFormulario(filtrosSel = []) {
     const container = document.getElementById('lista-checkbox-filtros');
     if (!container) return;
     container.innerHTML = '';
 
     filtrosSalvos.forEach(filtro => {
-        const isChecked = filtrosSelecionados.includes(filtro) ? 'checked' : '';
+        const isChecked = filtrosSel.includes(filtro) ? 'checked' : '';
         const div = document.createElement('div');
         div.className = 'filtro-item-checkbox';
-        div.innerHTML = `
-            <label>
-                <input type="checkbox" value="${filtro}" ${isChecked} class="checkbox-filtro-prod">
-                ${filtro}
-            </label>
-            <span class="btn-excluir-filtro" onclick="excluirFiltroGlobal('${filtro}')" title="Excluir">&times;</span>
-        `;
+        div.innerHTML = `<label><input type="checkbox" value="${filtro}" ${isChecked} class="checkbox-filtro-prod">${filtro}</label><span class="btn-excluir-filtro" onclick="excluirFiltroGlobal('${filtro}')">&times;</span>`;
         container.appendChild(div);
     });
 }
 
-window.criarNovoFiltro = function() {
+window.criarNovoFiltro = async function() {
     const input = document.getElementById('novo-filtro-input');
     const nomeFiltro = input.value.trim();
     if (!nomeFiltro || filtrosSalvos.includes(nomeFiltro)) return;
 
     filtrosSalvos.push(nomeFiltro);
     input.value = '';
+    await sincronizarComNuvem();
     renderizarFiltrosFormulario();
 };
 
-window.excluirFiltroGlobal = function(nomeFiltro) {
+window.excluirFiltroGlobal = async function(nomeFiltro) {
     if (confirm(`Excluir filtro "${nomeFiltro}"?`)) {
         filtrosSalvos = filtrosSalvos.filter(f => f !== nomeFiltro);
         produtos.forEach(p => { if (p.filtros) p.filtros = p.filtros.filter(f => f !== nomeFiltro); });
-        sincronizarEAtualizarProdutos();
+        await sincronizarEAtualizarProdutos();
         renderizarFiltrosFormulario();
     }
 };
 
-window.toggleSanfona = function(element) {
-    element.parentElement.classList.toggle('recolhido');
-};
-
-window.toggleValorPromo = function() {
-    const selecao = document.getElementById('promocao-check').value;
-    document.getElementById('grupo-valor-promo').style.display = selecao === 'sim' ? 'block' : 'none';
-};
+window.toggleSanfona = (el) => el.parentElement.classList.toggle('recolhido');
+window.toggleValorPromo = () => document.getElementById('grupo-valor-promo').style.display = document.getElementById('promocao-check').value === 'sim' ? 'block' : 'none';
 
 document.getElementById('form-produto').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -448,16 +475,16 @@ document.getElementById('form-produto').addEventListener('submit', function(e) {
     const valorPromo = emPromocao ? parseFloat(document.getElementById('valor-promo').value) : null;
     const exclusivoAssinante = document.getElementById('exclusivo-assinante').checked;
     const inputImagens = document.getElementById('imagens-produto');
-    const filtrosSelecionados = Array.from(document.querySelectorAll('.checkbox-filtro-prod:checked')).map(el => el.value);
+    const filtrosSel = Array.from(document.querySelectorAll('.checkbox-filtro-prod:checked')).map(el => el.value);
 
     const arquivos = Array.from(inputImagens.files);
     if (arquivos.length > 0) {
-        processarImagensEmBase64(arquivos, function(imagensBase64) {
-            salvarOuAtualizarNoArray(id, nome, descricao, valor, emPromocao, valorPromo, imagensBase64, filtrosSelecionados, exclusivoAssinante);
+        processarImagensEmBase64(arquivos, function(imgs64) {
+            salvarOuAtualizarNoArray(id, nome, descricao, valor, emPromocao, valorPromo, imgs64, filtrosSel, exclusivoAssinante);
         });
     } else {
-        let imagensAntigas = id ? (produtos.find(p => p.id == id)?.imagens || []) : [];
-        salvarOuAtualizarNoArray(id, nome, descricao, valor, emPromocao, valorPromo, imagensAntigas, filtrosSelecionados, exclusivoAssinante);
+        let imgsAntigas = id ? (produtos.find(p => p.id == id)?.imagens || []) : [];
+        salvarOuAtualizarNoArray(id, nome, descricao, valor, emPromocao, valorPromo, imgsAntigas, filtrosSel, exclusivoAssinante);
     }
 });
 
@@ -490,17 +517,17 @@ window.alterarOrdemProduto = async function(idProduto, novaOrdemInput) {
     let novaOrdem = parseInt(novaOrdemInput);
     if (isNaN(novaOrdem) || novaOrdem < 1) return;
     produtos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-    const indexAntigo = produtos.findIndex(p => p.id === idProduto);
-    if (indexAntigo === -1) return;
-    const [produtoMovido] = produtos.splice(indexAntigo, 1);
-    produtos.splice(Math.min(novaOrdem - 1, produtos.length), 0, produtoMovido);
+    const idxAntigo = produtos.findIndex(p => p.id === idProduto);
+    if (idxAntigo === -1) return;
+    const [movido] = produtos.splice(idxAntigo, 1);
+    produtos.splice(Math.min(novaOrdem - 1, produtos.length), 0, movido);
     produtos.forEach((p, idx) => p.ordem = idx + 1);
     await sincronizarEAtualizarProdutos();
 };
 
 async function sincronizarEAtualizarProdutos() {
     produtos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-    await persistirTudoNaNuvem();
+    await sincronizarComNuvem();
     renderizarProdutos();
     renderizarCheckboxDivulgacaoProdutos();
 }
@@ -582,5 +609,14 @@ window.excluirProduto = async function(id) {
     }
 };
 
-// Inicia o sistema conectando com a nuvem automaticamente
-inicializarSistemaDaNuvem();
+function inicializarInterface() {
+    carregarConfiguracoesLoja();
+    renderizarProdutos();
+    renderizarFiltrosFormulario();
+    renderizarClientesAssinantes();
+    renderizarContatosDivulgacao();
+    renderizarCheckboxDivulgacaoClientes();
+    renderizarCheckboxDivulgacaoProdutos();
+}
+
+carregarDadosDaNuvem();

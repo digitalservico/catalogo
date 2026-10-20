@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vittoriana Atacado - Painel de Gestão</title>
+    <!-- Importação de fontes elegantes -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Faixa Dourada Superior -->
+    <div class="faixa-topo-omega">
+        <span>PAINEL ADMINISTRATIVO EXCLUSIVO</span>
+        <span class="separador">•</span>
+        <span>GESTÃO DE ALTA COSTURA</span>
+    </div>
+
+    <!-- Cabeçalho do Painel com Identidade da Marca e Botão de Vitrine -->
+    <header class="painel-header">
+        <div class="painel-header-conteudo">
+            <div class="painel-logo-wrapper">
+                <h1 class="marca-titulo" id="painel-titulo-loja">Vittoriana</h1>
+                <span class="marca-subtitulo">Painel de Controlo & Gestão</span>
+            </div>
+            <a href="index.html" target="_blank" class="btn-ver-vitrine">🌐 Ver Vitrine da Loja</a>
+        </div>
+    </header>
+
+    <div class="container-principal">
+        
+        <!-- COLUNA ESQUERDA: CONFIGURAÇÕES, SENHA ADMIN, CLIENTES, CONTATOS E PRODUTOS -->
+        <div class="coluna">
+
+            <!-- CONFIGURAÇÕES DA LOJA, WHATSAPP, FAIXA E BACKUP -->
+            <div class="card-sanfona recolhido">
+                <div class="card-header" onclick="toggleSanfona(this)">
+                    <h2>⚙️ Configurações da Loja, Faixa & Backup</h2>
+                    <span class="icone-seta">&#9650;</span>
+                </div>
+                <div class="card-body">
+                    <form id="form-config-loja" onsubmit="salvarConfiguracoesLoja(event)">
+                        <div class="form-grupo">
+                            <label for="input-nome-loja">Nome Principal da Loja</label>
+                            <input type="text" id="input-nome-loja" required placeholder="Ex: Vittoriana">
+                            <small class="aviso-campos">Muda o nome no topo e o título da aba do navegador automaticamente.</small>
+                        </div>
+                        <div class="form-grupo" style="margin-top: 15px;">
+                            <label for="input-whatsapp-loja">📱 WhatsApp da Loja (para receber pedidos)</label>
+                            <input type="text" id="input-whatsapp-loja" placeholder="Ex: 62999999999">
+                            <small class="aviso-campos">Número para onde os clientes vão enviar mensagens ao clicar em solicitar produto.</small>
+                        </div>
+                        <div class="form-grupo" style="margin-top: 15px;">
+                            <label for="input-faixa-topo">✨ Texto da Faixa Superior Dourada</label>
+                            <input type="text" id="input-faixa-topo" placeholder="Ex: 5% NA PRIMEIRA COMPRA • NOVIDADES • ENVIO SEGURO">
+                            <small class="aviso-campos">Texto exibido na barra dourada superior de todas as páginas.</small>
+                        </div>
+                        <div class="form-grupo" style="margin-top: 15px;">
+                            <label for="input-dias-assinatura">Dias de Validade da Assinatura</label>
+                            <input type="number" id="input-dias-assinatura" min="1" required placeholder="30">
+                            <small class="aviso-campos">Dias padrão de acesso para quem cria conta pelo site.</small>
+                        </div>
+                        <button type="submit" class="btn-ouro" style="margin-top: 20px;">Salvar Configurações</button>
+                    </form>
+
+                    <!-- SEÇÃO DE BACKUP INTELIGENTE EM JSON -->
+                    <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #eae2d8;">
+                        <h3 style="font-size: 11px; font-weight: 600; color: #8c7355; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;">💾 Backup & Segurança de Dados</h3>
+                        <p style="font-size: 11px; color: #666; margin-bottom: 12px; line-height: 1.4;">
+                            Baixe um arquivo contendo absolutamente tudo (produtos, fotos, clientes, senhas e configurações). Você pode restaurar depois sem perder novos cadastros.
+                        </p>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" class="btn-ouro" style="margin-top:0;" onclick="baixarBackupJSON()">📥 Baixar Backup JSON</button>
+                            <label class="btn-cinza" style="margin-top:0; text-align: center; display: inline-block; cursor: pointer; padding: 12px;">
+                                📤 Restaurar Backup
+                                <input type="file" id="input-arquivo-backup" accept=".json" style="display: none;" onchange="importarBackupJSON(event)">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD: SEGURANÇA & ALTERAÇÃO DE SENHA DA ADMINISTRAÇÃO -->
+            <div class="card-sanfona recolhido">
+                <div class="card-header" onclick="toggleSanfona(this)">
+                    <h2>🔒 Segurança & Senha da Administração</h2>
+                    <span class="icone-seta">&#9650;</span>
+                </div>
+                <div class="card-body">
+                    <form id="form-alterar-senha-admin" onsubmit="salvarNovaSenhaAdmin(event)">
+                        <div class="form-grupo">
+                            <label for="input-nova-senha">Nova Palavra-passe Administrativa</label>
+                            <input type="password" id="input-nova-senha" required placeholder="Digite a nova senha">
+                            <small class="aviso-campos">Esta senha será exigida para entrar na Opção 2 de Gestão.</small>
+                        </div>
+                        <div class="form-grupo" style="margin-top: 15px;">
+                            <label for="input-confirma-senha">Confirmar Nova Palavra-passe</label>
+                            <input type="password" id="input-confirma-senha" required placeholder="Repita a nova senha">
+                        </div>
+                        <button type="submit" class="btn-ouro">Atualizar Senha de Gestão</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- CARD 1: GESTÃO DE CLIENTES ASSINANTES -->
+            <div class="card-sanfona">
+                <div class="card-header" onclick="toggleSanfona(this)">
+                    <h2>👑 Gestão de Clientes Assinantes</h2>
+                    <span class="icone-seta">&#9650;</span>
+                </div>
+                <div class="card-body">
+                    <p style="font-size: 11px; color: #666; margin-bottom: 15px; line-height: 1.4;">
+                        Estes são os clientes que criaram conta através da página de <b>Login do Site</b>. Aproveite para aprovar o acesso ou controlar os vencimentos.
+                    </p>
+                    <div class="tabela-container" style="max-height: 280px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Assinante / WhatsApp / Senha</th>
+                                    <th style="text-align: center;">Status / Vencimento</th>
+                                    <th style="text-align: center;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-clientes-assinantes-tabela">
+                                <tr>
+                                    <td colspan="3" class="vazio">Nenhum cliente assinante cadastrado pelo site.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 2: GESTÃO DE CONTATOS DE DIVULGAÇÃO -->
+            <div class="card-sanfona">
+                <div class="card-header" onclick="toggleSanfona(this)">
+                    <h2>📢 Cadastrar Contatos para Divulgação (Sem Assinatura)</h2>
+                    <span class="icone-seta">&#9650;</span>
+                </div>
+                <div class="card-body">
+                    <form id="form-divulgacao" onsubmit="cadastrarContatoDivulgacao(event)">
+                        <div class="form-grupo">
+                            <label for="div-nome">Nome do Contato *</label>
+                            <input type="text" id="div-nome" required placeholder="Ex: Ana Paula">
+                        </div>
+                        <div class="form-grupo">
+                            <label for="div-whatsapp">WhatsApp (com DDD) *</label>
+                            <input type="text" id="div-whatsapp" required placeholder="Ex: 62999999999">
+                        </div>
+                        <button type="submit" class="btn-ouro">+ Cadastrar Contato para Divulgação</button>
+                    </form>
+
+                    <!-- Lista de Contatos de Divulgação -->
+                    <div style="margin-top: 20px;">
+                        <h3 style="font-size: 11px; font-weight: 600; color: #8c7355; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px;">Contatos Avulsos Cadastrados</h3>
+                        <div class="tabela-container" style="max-height: 200px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nome / WhatsApp</th>
+                                        <th style="text-align: center;">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lista-contatos-divulgacao-tabela">
+                                    <tr>
+                                        <td colspan="2" class="vazio">Nenhum contato avulso cadastrado.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD: CADASTRAR PRODUTO -->
+            <div class="card-sanfona">
+                <div class="card-header" onclick="toggleSanfona(this)">
+                    <h2>✨ Cadastrar Novo Produto</h2>
+                    <span class="icone-seta">&#9650;</span>
+                </div>
+                <div class="card-body">
+                    <form id="form-produto">
+                        <input type="hidden" id="produto-id">
+                        
+                        <div class="form-grupo">
+                            <label for="nome">Nome do Produto *</label>
+                            <input type="text" id="nome" required placeholder="Ex: Vestido Longo de Seda">
+                        </div>
+
+                        <div class="form-grupo">
+                            <label for="descricao">Descrição do Produto</label>
+                            <textarea id="descricao" rows="3" placeholder="Detalhes, tamanho, cor, material..."></textarea>
+                        </div>
+
+                        <div class="form-linha">
+                            <div class="form-grupo">
+                                <label for="valor">Valor (R$) *</label>
+                                <input type="number" step="0.01" id="valor" required placeholder="0.00">
+                            </div>
+
+                            <div class="form-grupo">
+                                <label for="promocao-check">Em Promoção?</label>
+                                <select id="promocao-check" onchange="toggleValorPromo()">
+                                    <option value="nao">Não</option>
+                                    <option value="sim">Sim</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-grupo" id="grupo-valor-promo" style="display: none;">
+                            <label for="valor-promo">Novo Valor Promocional (R$)</label>
+                            <input type="number" step="0.01" id="valor-promo" placeholder="0.00">
+                        </div>
+
+                        <!-- CAMPO EXCLUSIVO PARA ASSINANTES -->
+                        <div class="form-grupo-exclusivo">
+                            <label class="label-exclusivo">
+                                <input type="checkbox" id="exclusivo-assinante">
+                                🔒 Exclusivo para Assinantes?
+                            </label>
+                            <small class="aviso-exclusivo">Se marcado, o produto ficará bloqueado na vitrine exigindo assinatura.</small>
+                        </div>
+
+                        <!-- SISTEMA DE FILTROS / TAGS -->
+                        <div class="form-grupo">
+                            <label>Filtros / Categorias do Produto</label>
+                            <div class="container-criar-filtro">
+                                <input type="text" id="novo-filtro-input" placeholder="Ex: Vestido, Blusa, Seda...">
+                                <button type="button" class="btn-adicionar-filtro" onclick="criarNovoFiltro()">+ Criar</button>
+                            </div>
+                            <small class="aviso-campos">Marque os filtros desejados ou crie novos.</small>
+                            <div id="lista-checkbox-filtros" class="checkbox-filtros-grid">
+                                <!-- Filtros dinâmicos -->
+                            </div>
+                        </div>
+
+                        <div class="form-grupo">
+                            <label for="imagens-produto">Imagens do Produto (Máximo 10)</label>
+                            <input type="file" id="imagens-produto" accept="image/*" multiple max="10">
+                            <small class="aviso-campos">Selecione até 10 imagens de uma vez.</small>
+                        </div>
+
+                        <button type="submit" id="btn-salvar" class="btn-ouro">+ Cadastrar Produto</button>
+                        <button type="button" id="btn-cancelar-edicao" class="btn-cinza" style="display: none;" onclick="cancelarEdicao()">Cancelar Edição</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- COLUNA DIREITA: PRODUTOS CADASTRADOS & CENTRAL DE DIVULGAÇÃO -->
+        <div class="coluna">
+            
+            <!-- CENTRAL DE DIVULGAÇÃO E DISPARO WHATSAPP -->
+            <div class="card-sanfona" style="border-top: 3px solid #d4af37;">
+                <div class="card-header" onclick="toggleSanfona(this)">
+                    <h2>📢 Central de Divulgação por WhatsApp</h2>
+                    <span class="icone-seta">&#9650;</span>
+                </div>
+                <div class="card-body">
+                    <p style="font-size: 11px; color: #666; margin-bottom: 15px; line-height: 1.5;">
+                        Selecione abaixo os destinatários (Assinantes e Contatos de Divulgação) e os produtos desejados para disparar novidades.
+                    </p>
+
+                    <!-- SELEÇÃO DE CLIENTES -->
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <label style="margin-bottom: 0;">1. Selecionar Destinatários</label>
+                            <button type="button" onclick="selecionarTodosClientes(true)" style="background: none; border: none; color: #8c7355; font-size: 10px; font-weight: 600; cursor: pointer; text-transform: uppercase;">Marcar Todos</button>
+                        </div>
+                        <div id="div-selecao-clientes" style="max-height: 150px; overflow-y: auto; background: #faf8f5; border: 1px solid #eae2d8; padding: 8px; border-radius: 2px;">
+                            <small style="color: #888;">Nenhum cliente ou contato cadastrado.</small>
+                        </div>
+                    </div>
+
+                    <!-- SELEÇÃO DE PRODUTOS -->
+                    <div style="margin-bottom: 18px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <label style="margin-bottom: 0;">2. Selecionar Produtos para Divulgação</label>
+                            <button type="button" onclick="selecionarTodosProdutos(true)" style="background: none; border: none; color: #8c7355; font-size: 10px; font-weight: 600; cursor: pointer; text-transform: uppercase;">Marcar Todos</button>
+                        </div>
+                        <div id="div-selecao-produtos" style="max-height: 130px; overflow-y: auto; background: #faf8f5; border: 1px solid #eae2d8; padding: 8px; border-radius: 2px;">
+                            <small style="color: #888;">Nenhum produto cadastrado.</small>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn-ouro" onclick="dispararDivulganaoWhatsApp()" style="background: linear-gradient(90deg, #25D366, #128C7E); box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);">
+                        🚀 Disparar Mensagem via WhatsApp
+                    </button>
+                </div>
+            </div>
+
+            <!-- PRODUTOS CADASTRADOS E LANÇADOS -->
+            <div class="card-sanfona">
+                <div class="card-header" onclick="toggleSanfona(this)">
+                    <h2>💎 Produtos Cadastrados e Lançados</h2>
+                    <span class="icone-seta">&#9650;</span>
+                </div>
+                <div class="card-body">
+                    <div class="tabela-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="text-align: center;">Ordem</th>
+                                    <th>Produto & Filtros</th>
+                                    <th>Valor / Status</th>
+                                    <th style="text-align: center;">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-produtos">
+                                <tr>
+                                    <td colspan="4" class="vazio">Nenhum produto cadastrado.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
