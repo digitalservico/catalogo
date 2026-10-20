@@ -1,38 +1,55 @@
+const JSONBIN_ID = '6ad6a909ffd5d160537a6186';
+const JSONBIN_KEY = '$2a$10$9P1mubytn4WC6yPQaxkDZejArdlPRGO06EoDYnqB6fyvkM5muZq1K';
+
 let todosProdutos = [];
 let filtroAtivo = "todos";
 
 document.addEventListener("DOMContentLoaded", async function () {
-    // Carrega dados direto da nuvem
-    await carregarDadosDaNuvemParaVitrine();
+    try {
+        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
+            headers: { 'X-Master-Key': JSONBIN_KEY }
+        });
+        if (resposta.ok) {
+            const resultado = await resposta.json();
+            const dados = resultado.record || {};
+            if (Array.isArray(dados.produtos)) {
+                localStorage.setItem('produtos_cadastrados', JSON.stringify(dados.produtos));
+            }
+            if (Array.isArray(dados.filtros)) {
+                localStorage.setItem('filtros_cadastrados', JSON.stringify(dados.filtros));
+            }
+            if (dados.config) {
+                if (dados.config.nomeLoja) localStorage.setItem('nome_loja_vittoriana', dados.config.nomeLoja);
+                if (dados.config.whatsappLoja) localStorage.setItem('whatsapp_loja_vittoriana', dados.config.whatsappLoja);
+                if (dados.config.faixaTopo) localStorage.setItem('faixa_topo_vittoriana', dados.config.faixaTopo);
+            }
+        }
+    } catch (e) {
+        console.error("Erro ao sincronizar dados da nuvem na vitrine:", e);
+    }
 
-    const nomeLojaSalvo = localStorage.getItem('nome_loja_vittoriana');
-    if (nomeLojaSalvo) {
+    const nomeLoja = localStorage.getItem('nome_loja_vittoriana');
+    if (nomeLoja) {
+        document.title = `${nomeLoja} - Vitrine`;
         const tituloMarca = document.getElementById('vitrine-titulo-loja');
-        if (tituloMarca) tituloMarca.innerText = nomeLojaSalvo;
+        if (tituloMarca) tituloMarca.innerText = nomeLoja;
+    }
+    const faixaSalva = localStorage.getItem('faixa_topo_vittoriana');
+    if (faixaSalva) {
+        const faixaElemento = document.querySelector('.faixa-topo-omega');
+        if (faixaElemento) {
+            faixaElemento.innerHTML = faixaSalva.split('•').map(t => `<span>${t.trim()}</span>`).join('<span class="separador">•</span>');
+        }
     }
 
     verificarValidadeAssinaturaAtiva();
+
+    todosProdutos = JSON.parse(localStorage.getItem('produtos_cadastrados')) || [];
+    todosProdutos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+
     renderizarPilulasFiltros();
     aplicarFiltrosEBusca();
 });
-
-async function carregarDadosDaNuvemParaVitrine() {
-    const dadosNuvem = await carregarDadosDaNuvem();
-    if (dadosNuvem) {
-        todosProdutos = dadosNuvem.produtos || [];
-        todosProdutos.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-
-        if (dadosNuvem.clientes) {
-            try {
-                localStorage.setItem('clientes_cadastrados', JSON.stringify(JSON.parse(descriptografar(dadosNuvem.clientes))));
-            } catch (e) {}
-        }
-        if (dadosNuvem.config) {
-            if (dadosNuvem.config.nome) localStorage.setItem('nome_loja_vittoriana', dadosNuvem.config.nome);
-            if (dadosNuvem.config.dias) localStorage.setItem('dias_validade_assinatura', dadosNuvem.config.dias);
-        }
-    }
-}
 
 function verificarValidadeAssinaturaAtiva() {
     const logado = localStorage.getItem('usuario_assinante_logado') === 'true';
@@ -62,7 +79,7 @@ function renderizarPilulasFiltros() {
     const containerPilulas = document.getElementById("container-pilulas-filtros");
     if (!containerPilulas) return;
 
-    const filtrosSalvos = ['Camisa', 'Blusa', 'Vestido', 'Calça']; // Filtros padrão ou busca do array
+    const filtrosSalvos = JSON.parse(localStorage.getItem('filtros_cadastrados')) || ['Camisa', 'Blusa', 'Vestido', 'Calça'];
 
     let htmlPilulas = `<button class="pilula-filtro ativa" onclick="selecionarFiltro('todos', this)">Todos</button>`;
 
@@ -75,16 +92,18 @@ function renderizarPilulasFiltros() {
 
 window.selecionarFiltro = function (nomeFiltro, elemento) {
     filtroAtivo = nomeFiltro;
-    document.querySelectorAll('.pilula-filtro').forEach(p => p.classList.remove('ativa'));
+
+    const pilulas = document.querySelectorAll('.pilula-filtro');
+    pilulas.forEach(p => p.classList.remove('ativa'));
     elemento.classList.add('ativa');
+
     aplicarFiltrosEBusca();
 };
 
 window.aplicarFiltrosEBusca = function () {
     const container = document.getElementById("vitrine-produtos");
-    const termoBusca = document.getElementById("campo-busca-vitrine").value.toLowerCase().trim();
-
-    if (!container) return;
+    const campoBusca = document.getElementById("campo-busca-vitrine");
+    const termoBusca = campoBusca ? campoBusca.value.toLowerCase().trim() : "";
 
     if (todosProdutos.length === 0) {
         container.innerHTML = `<div class="aviso-vazio">Nenhum produto cadastrado na vitrine no momento.</div>`;
@@ -93,11 +112,15 @@ window.aplicarFiltrosEBusca = function () {
 
     const produtosFiltrados = todosProdutos.filter(prod => {
         const passaNoFiltro = (filtroAtivo === 'todos') || (prod.filtros && prod.filtros.includes(filtroAtivo));
+
         const textoNome = (prod.nome || '').toLowerCase();
         const textoDesc = (prod.descricao || '').toLowerCase();
         const textoFiltros = (prod.filtros || []).join(' ').toLowerCase();
 
-        const passaNaBusca = !termoBusca || textoNome.includes(termoBusca) || textoDesc.includes(termoBusca) || textoFiltros.includes(termoBusca);
+        const passaNaBusca = !termoBusca || 
+            textoNome.includes(termoBusca) || 
+            textoDesc.includes(termoBusca) || 
+            textoFiltros.includes(termoBusca);
 
         return passaNoFiltro && passaNaBusca;
     });
@@ -115,29 +138,38 @@ window.aplicarFiltrosEBusca = function () {
 
         card.addEventListener('click', function (e) {
             if (e.target.classList.contains('btn-carrossel') || e.target.closest('.btn-carrossel')) return;
+
             verificarValidadeAssinaturaAtiva();
 
             if (prod.exclusivoAssinante) {
                 const usuarioLogado = localStorage.getItem('usuario_assinante_logado') === 'true';
+
                 if (!usuarioLogado) {
-                    alert("🔒 Conteúdo Exclusivo!\n\nEste produto é restrito a assinantes do clube. Por favor, faça login ou renove sua conta.");
+                    alert("🔒 Conteúdo Exclusivo!\n\nEste produto é restrito a assinantes do clube. Por favor, faça login ou renove sua conta para liberar o acesso.");
                     return;
                 }
             }
-            window.location.href = `../produto/produto.html?id=${prod.id}`;
+
+            window.location.href = `produto/produto.html?id=${prod.id}`;
         });
 
         let htmlImagens = `<div class="produto-imagens" id="galeria-${indexProd}">`;
+
         if (prod.exclusivoAssinante) {
-            htmlImagens += `<div style="position: absolute; top: 10px; left: 10px; background: rgba(184, 147, 83, 0.9); color: #fff; font-size: 9px; font-weight: 600; padding: 4px 8px; z-index: 4; border-radius: 2px;">Exclusivo Assinantes</div>`;
+            htmlImagens += `<div style="position: absolute; top: 10px; left: 10px; background: rgba(184, 147, 83, 0.9); color: #fff; font-size: 9px; font-weight: 600; padding: 4px 8px; letter-spacing: 1px; text-transform: uppercase; z-index: 4; border-radius: 2px;">Exclusivo Assinantes</div>`;
         }
 
         if (prod.imagens && prod.imagens.length > 0) {
             prod.imagens.forEach((imgSrc, imgIndex) => {
-                htmlImagens += `<img src="${imgSrc}" class="${imgIndex === 0 ? "ativa" : ""}" alt="${prod.nome}">`;
+                const classeAtiva = imgIndex === 0 ? "ativa" : "";
+                htmlImagens += `<img src="${imgSrc}" class="${classeAtiva}" alt="${prod.nome}">`;
             });
+
             if (prod.imagens.length > 1) {
-                htmlImagens += `<button class="btn-carrossel btn-prev" onclick="mudarImagem(event, ${indexProd}, -1)">&#10094;</button><button class="btn-carrossel btn-next" onclick="mudarImagem(event, ${indexProd}, 1)">&#10095;</button>`;
+                htmlImagens += `
+                    <button class="btn-carrossel btn-prev" onclick="mudarImagem(event, ${indexProd}, -1)">&#10094;</button>
+                    <button class="btn-carrossel btn-next" onclick="mudarImagem(event, ${indexProd}, 1)">&#10095;</button>
+                `;
             }
         } else {
             htmlImagens += `<img src="https://via.placeholder.com/250x260?text=Sem+Imagem" class="ativa" alt="Sem imagem">`;
@@ -145,23 +177,49 @@ window.aplicarFiltrosEBusca = function () {
         htmlImagens += `</div>`;
 
         let htmlPrecos = `<span class="preco-atual-vitrine">R$ ${prod.valor.toFixed(2).replace('.', ',')}</span>`;
+
         if (prod.emPromocao && prod.valorPromo) {
-            htmlPrecos = `<span class="preco-original-vitrine">R$ ${prod.valor.toFixed(2).replace('.', ',')}</span><div class="preco-container-atual"><span class="preco-promo-vitrine">R$ ${prod.valorPromo.toFixed(2).replace('.', ',')}</span></div><span class="tag-desconto">Preço Exclusivo Clube</span>`;
+            htmlPrecos = `
+                <span class="preco-original-vitrine">R$ ${prod.valor.toFixed(2).replace('.', ',')}</span>
+                <div class="preco-container-atual">
+                    <span class="preco-promo-vitrine">R$ ${prod.valorPromo.toFixed(2).replace('.', ',')}</span>
+                </div>
+                <span class="tag-desconto">Preço Exclusivo Clube</span>
+            `;
         }
 
-        card.innerHTML = `${htmlImagens}<div class="produto-info"><div class="produto-nome">${prod.nome}</div><div class="produto-precos">${htmlPrecos}</div></div>`;
+        card.innerHTML = `
+            ${htmlImagens}
+            <div class="produto-info">
+                <div class="produto-nome">${prod.nome}</div>
+                <div class="produto-precos">
+                    ${htmlPrecos}
+                </div>
+            </div>
+        `;
+
         container.appendChild(card);
     });
 };
 
 window.mudarImagem = function (event, indexProd, direcao) {
     event.stopPropagation();
+
     const galeria = document.getElementById(`galeria-${indexProd}`);
+    if (!galeria) return;
     const imagens = galeria.querySelectorAll("img");
     let indexAtual = Array.from(imagens).findIndex(img => img.classList.contains("ativa"));
-    imagens[indexAtual].classList.remove("ativa");
+
+    if (indexAtual !== -1) {
+        imagens[indexAtual].classList.remove("ativa");
+    }
+
     indexAtual += direcao;
-    if (indexAtual >= imagens.length) indexAtual = 0;
-    else if (indexAtual < 0) indexAtual = imagens.length - 1;
+    if (indexAtual >= imagens.length) {
+        indexAtual = 0;
+    } else if (indexAtual < 0) {
+        indexAtual = imagens.length - 1;
+    }
+
     imagens[indexAtual].classList.add("ativa");
 };
