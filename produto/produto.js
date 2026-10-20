@@ -1,27 +1,5 @@
-const JSONBIN_ID = '6ad6a909ffd5d160537a6186';
-const JSONBIN_KEY = '$2a$10$9P1mubytn4WC6yPQaxkDZejArdlPRGO06EoDYnqB6fyvkM5muZq1K';
-
-document.addEventListener("DOMContentLoaded", async function () {
-    try {
-        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
-            headers: { 'X-Master-Key': JSONBIN_KEY }
-        });
-        if (resposta.ok) {
-            const resultado = await resposta.json();
-            const dados = resultado.record || {};
-            if (Array.isArray(dados.produtos)) {
-                localStorage.setItem('produtos_cadastrados', JSON.stringify(dados.produtos));
-            }
-            if (dados.config) {
-                if (dados.config.nomeLoja) localStorage.setItem('nome_loja_vittoriana', dados.config.nomeLoja);
-                if (dados.config.whatsappLoja) localStorage.setItem('whatsapp_loja_vittoriana', dados.config.whatsappLoja);
-                if (dados.config.faixaTopo) localStorage.setItem('faixa_topo_vittoriana', dados.config.faixaTopo);
-            }
-        }
-    } catch (e) {
-        console.error("Erro ao atualizar dados da nuvem:", e);
-    }
-
+document.addEventListener("DOMContentLoaded", function () {
+    // Atualiza título da aba, nome da loja e faixa superior dinamicamente
     const nomeLoja = localStorage.getItem('nome_loja_vittoriana');
     if (nomeLoja) {
         document.title = `${nomeLoja} - Detalhes do Produto`;
@@ -36,6 +14,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
+    // Revalida a assinatura ao abrir a página direta
     verificarValidadeAssinaturaAtivaProduto();
 
     const containerDetalhe = document.getElementById("detalhe-produto");
@@ -53,11 +32,12 @@ document.addEventListener("DOMContentLoaded", async function () {
         return;
     }
 
+    // BLOQUEIO DE ACESSO DIRETO POR LINK
     if (produto.exclusivoAssinante) {
         const usuarioLogado = localStorage.getItem('usuario_assinante_logado') === 'true';
         if (!usuarioLogado) {
             alert("🔒 Conteúdo Exclusivo!\n\nEste produto é exclusivo para assinantes do clube.");
-            window.location.href = '../vitrine/index.html';
+            window.location.href = '../index.html';
             return;
         }
     }
@@ -101,6 +81,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         `;
     }
 
+    // Puxa o WhatsApp configurado pela dona no painel de gestão
     const whatsappLoja = localStorage.getItem('whatsapp_loja_vittoriana') || '62999999999';
     const textoZap = encodeURIComponent(`Olá! Gostaria de consultar a disponibilidade do produto: ${produto.nome}`);
     const urlWhatsappFinal = `https://wa.me/55${whatsappLoja.replace(/\D/g, '')}?text=${textoZap}`;
