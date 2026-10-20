@@ -1,4 +1,31 @@
-document.addEventListener("DOMContentLoaded", function () {
+// FUNÇÃO DE SINCRONIZAÇÃO AUTOMÁTICA COM O BACKUP DO SERVIDOR (GITHUB) NO LOGIN
+async function sincronizarBackupLogin() {
+    try {
+        const resposta = await fetch('../backup_vittoriana_2026-10-20.json');
+        if (!resposta.ok) return;
+
+        const backup = await resposta.json();
+
+        if (backup.config) {
+            if (backup.config.nomeLoja) localStorage.setItem('nome_loja_vittoriana', backup.config.nomeLoja);
+            if (backup.config.faixaTopo) localStorage.setItem('faixa_topo_vittoriana', backup.config.faixaTopo);
+            if (backup.config.whatsappLoja) localStorage.setItem('whatsapp_loja_vittoriana', backup.config.whatsappLoja);
+        }
+        if (backup.clientes) {
+            localStorage.setItem('clientes_cadastrados', JSON.stringify(backup.clientes));
+        }
+        if (backup.senhaAdmin) {
+            localStorage.setItem('senha_admin_vittoriana', backup.senhaAdmin);
+        }
+    } catch (erro) {
+        console.log("Arquivo de backup local não encontrado ou modo offline no login.");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async function () {
+    // Sincroniza o backup antes de carregar o login
+    await sincronizarBackupLogin();
+
     const nomeLojaSalvo = localStorage.getItem('nome_loja_vittoriana');
     if (nomeLojaSalvo) {
         document.title = `${nomeLojaSalvo} - Acesso Restrito`;
