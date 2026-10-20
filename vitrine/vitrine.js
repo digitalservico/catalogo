@@ -1,7 +1,34 @@
 let todosProdutos = [];
 let filtroAtivo = "todos";
 
-document.addEventListener("DOMContentLoaded", function () {
+// FUNÇÃO DE SINCRONIZAÇÃO AUTOMÁTICA COM O BACKUP DO SERVIDOR (GITHUB) NA VITRINE
+async function sincronizarBackupVitrine() {
+    try {
+        const resposta = await fetch('../backup_vittoriana_2026-10-20.json');
+        if (!resposta.ok) return;
+
+        const backup = await resposta.json();
+
+        if (backup.config) {
+            if (backup.config.nomeLoja) localStorage.setItem('nome_loja_vittoriana', backup.config.nomeLoja);
+            if (backup.config.faixaTopo) localStorage.setItem('faixa_topo_vittoriana', backup.config.faixaTopo);
+            if (backup.config.whatsappLoja) localStorage.setItem('whatsapp_loja_vittoriana', backup.config.whatsappLoja);
+        }
+        if (backup.filtros) {
+            localStorage.setItem('filtros_cadastrados', JSON.stringify(backup.filtros));
+        }
+        if (backup.produtos) {
+            localStorage.setItem('produtos_cadastrados', JSON.stringify(backup.produtos));
+        }
+    } catch (erro) {
+        console.log("Arquivo de backup local não encontrado ou modo offline na vitrine.");
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async function () {
+    // Sincroniza primeiro o backup antes de carregar a interface da vitrine
+    await sincronizarBackupVitrine();
+
     // Atualiza título da aba, nome da loja e faixa superior dinamicamente
     const nomeLoja = localStorage.getItem('nome_loja_vittoriana');
     if (nomeLoja) {
