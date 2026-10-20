@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         const usuarioLogado = localStorage.getItem('usuario_assinante_logado') === 'true';
         if (!usuarioLogado) {
             alert("🔒 Conteúdo Exclusivo!\n\nEste produto é exclusivo para assinantes do clube.");
-            window.location.href = '../index.html';
+            window.location.href = '../vitrine/index.html';
             return;
         }
     }
