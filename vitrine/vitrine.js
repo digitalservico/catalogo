@@ -1,33 +1,8 @@
-const JSONBIN_ID = '6ad6a909ffd5d160537a6186';
-const JSONBIN_KEY = '$2a$10$9P1mubytn4WC6yPQaxkDZejArdlPRGO06EoDYnqB6fyvkM5muZq1K';
-
 let todosProdutos = [];
 let filtroAtivo = "todos";
 
-document.addEventListener("DOMContentLoaded", async function () {
-    try {
-        const resposta = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
-            headers: { 'X-Master-Key': JSONBIN_KEY }
-        });
-        if (resposta.ok) {
-            const resultado = await resposta.json();
-            const dados = resultado.record || {};
-            if (Array.isArray(dados.produtos)) {
-                localStorage.setItem('produtos_cadastrados', JSON.stringify(dados.produtos));
-            }
-            if (Array.isArray(dados.filtros)) {
-                localStorage.setItem('filtros_cadastrados', JSON.stringify(dados.filtros));
-            }
-            if (dados.config) {
-                if (dados.config.nomeLoja) localStorage.setItem('nome_loja_vittoriana', dados.config.nomeLoja);
-                if (dados.config.whatsappLoja) localStorage.setItem('whatsapp_loja_vittoriana', dados.config.whatsappLoja);
-                if (dados.config.faixaTopo) localStorage.setItem('faixa_topo_vittoriana', dados.config.faixaTopo);
-            }
-        }
-    } catch (e) {
-        console.error("Erro ao sincronizar dados da nuvem na vitrine:", e);
-    }
-
+document.addEventListener("DOMContentLoaded", function () {
+    // Atualiza título da aba, nome da loja e faixa superior dinamicamente
     const nomeLoja = localStorage.getItem('nome_loja_vittoriana');
     if (nomeLoja) {
         document.title = `${nomeLoja} - Vitrine`;
@@ -42,6 +17,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
+    // Checa se o usuário está vencido logo ao carregar a página
     verificarValidadeAssinaturaAtiva();
 
     todosProdutos = JSON.parse(localStorage.getItem('produtos_cadastrados')) || [];
@@ -51,6 +27,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     aplicarFiltrosEBusca();
 });
 
+// FUNÇÃO DE SEGURANÇA: Cancela o login se a data de vencimento passou
 function verificarValidadeAssinaturaAtiva() {
     const logado = localStorage.getItem('usuario_assinante_logado') === 'true';
     if (!logado) return;
@@ -79,7 +56,7 @@ function renderizarPilulasFiltros() {
     const containerPilulas = document.getElementById("container-pilulas-filtros");
     if (!containerPilulas) return;
 
-    const filtrosSalvos = JSON.parse(localStorage.getItem('filtros_cadastrados')) || ['Camisa', 'Blusa', 'Vestido', 'Calça'];
+    const filtrosSalvos = JSON.parse(localStorage.getItem('filtros_cadastrados')) || [];
 
     let htmlPilulas = `<button class="pilula-filtro ativa" onclick="selecionarFiltro('todos', this)">Todos</button>`;
 
@@ -102,8 +79,7 @@ window.selecionarFiltro = function (nomeFiltro, elemento) {
 
 window.aplicarFiltrosEBusca = function () {
     const container = document.getElementById("vitrine-produtos");
-    const campoBusca = document.getElementById("campo-busca-vitrine");
-    const termoBusca = campoBusca ? campoBusca.value.toLowerCase().trim() : "";
+    const termoBusca = document.getElementById("campo-busca-vitrine").value.toLowerCase().trim();
 
     if (todosProdutos.length === 0) {
         container.innerHTML = `<div class="aviso-vazio">Nenhum produto cadastrado na vitrine no momento.</div>`;
@@ -139,6 +115,7 @@ window.aplicarFiltrosEBusca = function () {
         card.addEventListener('click', function (e) {
             if (e.target.classList.contains('btn-carrossel') || e.target.closest('.btn-carrossel')) return;
 
+            // REVALIDA A ASSINATURA ANTES DE ABRIR QUALQUER PRODUTO
             verificarValidadeAssinaturaAtiva();
 
             if (prod.exclusivoAssinante) {
@@ -206,13 +183,10 @@ window.mudarImagem = function (event, indexProd, direcao) {
     event.stopPropagation();
 
     const galeria = document.getElementById(`galeria-${indexProd}`);
-    if (!galeria) return;
     const imagens = galeria.querySelectorAll("img");
     let indexAtual = Array.from(imagens).findIndex(img => img.classList.contains("ativa"));
 
-    if (indexAtual !== -1) {
-        imagens[indexAtual].classList.remove("ativa");
-    }
+    imagens[indexAtual].classList.remove("ativa");
 
     indexAtual += direcao;
     if (indexAtual >= imagens.length) {
