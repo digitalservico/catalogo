@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             <div class="preco-container-atual">
                 <span class="preco-promo-detalhe">R$ ${produto.valorPromo.toFixed(2).replace('.', ',')}</span>
             </div>
-            <span class="badge-exclusivo">Preço Exclusivo de Atacado</span>
+            <span class="badge-exclusivo">Preço Exclusivo do Clube</span>
         `;
     }
 
@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         </div>
 
         <div class="detalhe-info">
-            <span class="tag-colecao">Alta Costura</span>
+            <span class="tag-colecao">ENTREGA EXPRESSA LOCAL</span>
             <h1 class="detalhe-titulo">${produto.nome}</h1>
             <div class="divisor-luxo"></div>
 
@@ -132,14 +132,14 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             <div class="detalhe-descricao-bloco">
                 <h3 class="titulo-secao-info">Detalhes do Produto</h3>
-                <p class="detalhe-descricao">${produto.descricao || 'Peça confeccionada com acabamento impecável, design exclusivo e tecidos de alta qualidade para o segmento de atacado.'}</p>
+                <p class="detalhe-descricao">${produto.descricao || 'Chocolaterie & Curadoria'}</p>
             </div>
 
             <div class="acoes-produto">
                 <a href="${urlWhatsappFinal}" target="_blank" class="btn-comprar-atacado">
                     Solicitar via WhatsApp
                 </a>
-                <span class="garantia-atacado">✦ Atendimento Exclusivo para Lojistas e Revenda</span>
+                <span class="garantia-atacado">✦ Atendimento Exclusivo via WhatsApp</span>
             </div>
         </div>
     `;
