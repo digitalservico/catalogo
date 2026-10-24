@@ -51,14 +51,14 @@ window.alternarModoLoginCadastro = function() {
     if (formLogin.style.display === 'none') {
         formLogin.style.display = 'block';
         formCadastro.style.display = 'none';
-        titulo.innerText = "👑 Entrar como Assinante";
-        subtitulo.innerText = "Aceda às coleções privadas e preços de atacado do clube.";
+        titulo.innerText = "👑 Entrar";
+        subtitulo.innerText = "Aceda às coleções privadas e preços exclusivos do clube.";
         badge.innerText = "OPÇÃO 1 • CLUBE EXCLUSIVO";
     } else {
         formLogin.style.display = 'none';
         formCadastro.style.display = 'block';
-        titulo.innerText = "✨ Criar Conta de Assinante";
-        subtitulo.innerText = "Preencha seus dados para solicitar acesso exclusivo ao clube de atacado.";
+        titulo.innerText = "✨ Criar Conta Clube Exclusivo";
+        subtitulo.innerText = "Preencha seus dados para solicitar acesso exclusivo ao clube.";
         badge.innerText = "OPÇÃO 1 • NOVO CADASTRO";
     }
 };
