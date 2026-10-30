@@ -1,8 +1,8 @@
 // FUNÇÃO DE SINCRONIZAÇÃO AUTOMÁTICA COM O BACKUP DO SERVIDOR (GITHUB) NO LOGIN
 async function sincronizarBackupLogin() {
     try {
-        const resposta = await fetch('../backup_vittoriana_2026-10-20.json');
-        if (!resposta.ok) return;
+        const resposta = await fetch('../backup_vittoriana_2026-10-20.json').catch(() => null);
+        if (!resposta || !resposta.ok) return;
 
         const backup = await resposta.json();
 
@@ -99,10 +99,8 @@ window.cadastrarNovoAssinante = function(event) {
     clientes.push(novoCliente);
     localStorage.setItem('clientes_cadastrados', JSON.stringify(clientes));
 
-    // Pega o WhatsApp configurado pela proprietária na loja
     const whatsappLoja = localStorage.getItem('whatsapp_loja_vittoriana') || '62999999999';
     
-    // Mensagem formatada enviando os dados exatamente como você pediu
     const textoMensagem = encodeURIComponent(
         `Olá! Gostaria de solicitar meu cadastro no clube exclusivo.\n\n` +
         `*Dados do Cadastro:*\n` +
@@ -119,13 +117,12 @@ window.cadastrarNovoAssinante = function(event) {
     
     document.getElementById('form-cadastro-assinante').reset();
     
-    // Abre a conversa do WhatsApp
     window.open(urlWhatsapp, '_blank');
     
     alternarModoLoginCadastro();
 };
 
-function autenticarAssinante(event) {
+window.autenticarAssinante = function(event) {
     event.preventDefault();
     const whatsapp = document.getElementById('login-whatsapp').value.trim().replace(/\D/g, '');
     const senha = document.getElementById('senha-assinante').value.trim();
@@ -148,9 +145,9 @@ function autenticarAssinante(event) {
     } else {
         alert("❌ WhatsApp ou palavra-passe incorretos, ou cadastro pendente/não encontrado.");
     }
-}
+};
 
-function autenticarProprietaria(event) {
+window.autenticarProprietaria = function(event) {
     event.preventDefault();
     const senhaInformada = document.getElementById('senha-gestao').value;
     
@@ -162,4 +159,4 @@ function autenticarProprietaria(event) {
     } else {
         alert('❌ Palavra-passe incorreta!');
     }
-}
+};
