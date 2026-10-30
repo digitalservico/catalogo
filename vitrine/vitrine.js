@@ -4,8 +4,8 @@ let filtroAtivo = "todos";
 // FUNÇÃO DE SINCRONIZAÇÃO AUTOMÁTICA COM O BACKUP DO SERVIDOR (GITHUB) NA VITRINE
 async function sincronizarBackupVitrine() {
     try {
-        const resposta = await fetch('../backup_vittoriana_2026-10-20.json');
-        if (!resposta.ok) return;
+        const resposta = await fetch('../backup_vittoriana_2026-10-20.json').catch(() => null);
+        if (!resposta || !resposta.ok) return;
 
         const backup = await resposta.json();
 
@@ -106,7 +106,8 @@ window.selecionarFiltro = function (nomeFiltro, elemento) {
 
 window.aplicarFiltrosEBusca = function () {
     const container = document.getElementById("vitrine-produtos");
-    const termoBusca = document.getElementById("campo-busca-vitrine").value.toLowerCase().trim();
+    const inputBusca = document.getElementById("campo-busca-vitrine");
+    const termoBusca = inputBusca ? inputBusca.value.toLowerCase().trim() : "";
 
     if (todosProdutos.length === 0) {
         container.innerHTML = `<div class="aviso-vazio">Nenhum produto cadastrado na vitrine no momento.</div>`;
@@ -142,7 +143,6 @@ window.aplicarFiltrosEBusca = function () {
         card.addEventListener('click', function (e) {
             if (e.target.classList.contains('btn-carrossel') || e.target.closest('.btn-carrossel')) return;
 
-            // REVALIDA A ASSINATURA ANTES DE ABRIR QUALQUER PRODUTO
             verificarValidadeAssinaturaAtiva();
 
             if (prod.exclusivoAssinante) {
@@ -160,7 +160,7 @@ window.aplicarFiltrosEBusca = function () {
         let htmlImagens = `<div class="produto-imagens" id="galeria-${indexProd}">`;
 
         if (prod.exclusivoAssinante) {
-            htmlImagens += `<div style="position: absolute; top: 10px; left: 10px; background: rgba(184, 147, 83, 0.9); color: #fff; font-size: 9px; font-weight: 600; padding: 4px 8px; letter-spacing: 1px; text-transform: uppercase; z-index: 4; border-radius: 2px;">Exclusivo Assinantes</div>`;
+            htmlImagens += `<div style="position: absolute; top: 10px; left: 10px; background: rgba(184, 147, 83, 0.9); color: #fff; font-size: 9px; font-weight: 600; padding: 4px 8px; letter-spacing: 1px; text-transform: uppercase; z-index: 4; border-radius: 2px;">CLUBE EXCLUSIVO</div>`;
         }
 
         if (prod.imagens && prod.imagens.length > 0) {
@@ -210,8 +210,10 @@ window.mudarImagem = function (event, indexProd, direcao) {
     event.stopPropagation();
 
     const galeria = document.getElementById(`galeria-${indexProd}`);
+    if (!galeria) return;
     const imagens = galeria.querySelectorAll("img");
     let indexAtual = Array.from(imagens).findIndex(img => img.classList.contains("ativa"));
+    if (indexAtual === -1) indexAtual = 0;
 
     imagens[indexAtual].classList.remove("ativa");
 
