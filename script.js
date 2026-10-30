@@ -8,8 +8,8 @@ let contatosDivulgacao = JSON.parse(localStorage.getItem('contatos_divulgacao_ca
 // FUNÇÃO DE SINCRONIZAÇÃO AUTOMÁTICA COM O BACKUP DO SERVIDOR (GITHUB)
 async function sincronizarBackupComServidor() {
     try {
-        const resposta = await fetch('backup_vittoriana_2026-10-20.json');
-        if (!resposta.ok) return;
+        const resposta = await fetch('backup_vittoriana_2026-10-20.json').catch(() => null);
+        if (!resposta || !resposta.ok) return;
 
         const backup = await resposta.json();
 
@@ -27,8 +27,11 @@ async function sincronizarBackupComServidor() {
             filtrosSalvos = backup.filtros;
         }
         if (backup.produtos) {
-            localStorage.setItem('produtos_cadastrados', JSON.stringify(backup.produtos));
-            produtos = backup.produtos;
+            let produtosAtuais = JSON.parse(localStorage.getItem('produtos_cadastrados')) || [];
+            let mapaProdutos = new Map(produtosAtuais.map(p => [p.id, p]));
+            (backup.produtos || []).forEach(p => mapaProdutos.set(p.id, p));
+            produtos = Array.from(mapaProdutos.values());
+            localStorage.setItem('produtos_cadastrados', JSON.stringify(produtos));
         }
         if (backup.clientes) {
             localStorage.setItem('clientes_cadastrados', JSON.stringify(backup.clientes));
@@ -61,7 +64,6 @@ function carregarConfiguracoesLoja() {
     if (inputWhatsapp) inputWhatsapp.value = whatsappLoja;
     if (inputFaixa) inputFaixa.value = faixaTopo;
 
-    // Altera o título da aba do navegador dinamicamente
     document.title = `${nomeLoja} - Painel de Gestão`;
 }
 
@@ -231,14 +233,12 @@ window.enviarAvisoVencimento = function(whatsapp, nome, diasRestantes) {
     window.open(`https://wa.me/55${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(mensagem)}`, '_blank');
 };
 
-// Funções de Edição Direta no Painel de Assinantes
 window.habilitarEdicaoCliente = function(id) {
     const spanInfo = document.getElementById(`info-cliente-${id}`);
     const spanBotoes = document.getElementById(`acoes-cliente-${id}`);
     const cliente = clientes.find(c => c.id === id);
     if (!cliente) return;
 
-    // Divide o nome caso tenha sobrenome salvo junto
     let partesNome = cliente.nome ? cliente.nome.split(' ') : ['', ''];
     let nomeP = partesNome[0] || '';
     let sobrenomeP = partesNome.slice(1).join(' ') || '';
@@ -598,15 +598,41 @@ document.getElementById('form-produto').addEventListener('submit', function(e) {
     }
 });
 
+// CORREÇÃO ESSENCIAL: Redimensionamento e compressão automática via Canvas para evitar estouro de espaço no navegador
 function processarImagensEmBase64(arquivos, callback) {
     let imagensBase64 = [];
     let concluidos = 0;
+    
     arquivos.forEach((arquivo, index) => {
         const reader = new FileReader();
         reader.onload = function(e) {
-            imagensBase64[index] = e.target.result;
-            concluidos++;
-            if (concluidos === arquivos.length) callback(imagensBase64.filter(Boolean));
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let largura = img.width;
+                let altura = img.height;
+                
+                const maxTamanho = 800;
+                if (largura > altura && largura > maxTamanho) {
+                    altura = Math.round((altura * maxTamanho) / largura);
+                    largura = maxTamanho;
+                } else if (altura > maxTamanho) {
+                    largura = Math.round((largura * maxTamanho) / altura);
+                    altura = maxTamanho;
+                }
+                
+                canvas.width = largura;
+                canvas.height = altura;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, largura, altura);
+                
+                const imagemComprimida = canvas.toDataURL('image/jpeg', 0.75);
+                imagensBase64[index] = imagemComprimida;
+                
+                concluidos++;
+                if (concluidos === arquivos.length) callback(imagensBase64.filter(Boolean));
+            };
+            img.src = e.target.result;
         };
         reader.readAsDataURL(arquivo);
     });
@@ -619,8 +645,22 @@ function salvarOuAtualizarNoArray(id, nome, descricao, valor, emPromocao, valorP
         const maiorOrdem = produtos.length > 0 ? Math.max(...produtos.map(p => p.ordem || 0)) + 1 : 1;
         produtos.push({ id: Date.now(), nome, descricao, valor, emPromocao, valorPromo, imagens, filtros, ordem: maiorOrdem, exclusivoAssinante });
     }
-    sincronizarEAtualizarProdutos();
-    cancelarEdicao();
+    
+    try {
+        sincronizarEAtualizarProdutos();
+        cancelarEdicao();
+        alert("✦ Produto cadastrado/atualizado com sucesso!");
+    } catch (err) {
+        try {
+            localStorage.setItem('produtos_cadastrados', JSON.stringify(produtos));
+            renderizarProdutos();
+            renderizarCheckboxDivulgacaoProdutos();
+            cancelarEdicao();
+            alert("✦ Produto cadastrado com sucesso!");
+        } catch (e2) {
+            alert("❌ O espaço interno do navegador esgotou. Clique em 'Baixar Backup JSON' para salvar seus dados, limpe os dados do site e restaure o backup.");
+        }
+    }
 }
 
 window.alterarOrdemProduto = function(idProduto, novaOrdemInput) {
