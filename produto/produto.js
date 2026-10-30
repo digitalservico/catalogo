@@ -1,8 +1,8 @@
 // FUNÇÃO DE SINCRONIZAÇÃO AUTOMÁTICA COM O BACKUP DO SERVIDOR (GITHUB) NA PÁGINA DO PRODUTO
 async function sincronizarBackupProduto() {
     try {
-        const resposta = await fetch('../backup_vittoriana_2026-10-20.json');
-        if (!resposta.ok) return;
+        const resposta = await fetch('../backup_vittoriana_2026-10-20.json').catch(() => null);
+        if (!resposta || !resposta.ok) return;
 
         const backup = await resposta.json();
 
@@ -108,7 +108,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         `;
     }
 
-    // Puxa o WhatsApp configurado pela dona no painel de gestão
     const whatsappLoja = localStorage.getItem('whatsapp_loja_vittoriana') || '62999999999';
     const textoZap = encodeURIComponent(`Olá! Gostaria de consultar a disponibilidade do produto: ${produto.nome}`);
     const urlWhatsappFinal = `https://wa.me/55${whatsappLoja.replace(/\D/g, '')}?text=${textoZap}`;
@@ -250,13 +249,15 @@ function renderizarVitrineRelacionada(produtos) {
 
 window.mudarFotoDetalhe = function (direcao) {
     const container = document.getElementById("container-foto-principal");
+    if (!container) return;
     const imagens = container.querySelectorAll("img");
     const miniaturas = document.querySelectorAll(".miniatura-item");
 
     let indexAtual = Array.from(imagens).findIndex(img => img.classList.contains("ativa"));
+    if (indexAtual === -1) indexAtual = 0;
 
     imagens[indexAtual].classList.remove("ativa");
-    if (miniaturas.length > 0) miniaturas[indexAtual].classList.remove("ativa");
+    if (miniaturas.length > indexAtual) miniaturas[indexAtual].classList.remove("ativa");
 
     indexAtual += direcao;
     if (indexAtual >= imagens.length) {
@@ -266,26 +267,29 @@ window.mudarFotoDetalhe = function (direcao) {
     }
 
     imagens[indexAtual].classList.add("ativa");
-    if (miniaturas.length > 0) miniaturas[indexAtual].classList.add("ativa");
+    if (miniaturas.length > indexAtual) miniaturas[indexAtual].classList.add("ativa");
 };
 
 window.selecionarFotoPorIndice = function (indexAlvo) {
     const container = document.getElementById("container-foto-principal");
+    if (!container) return;
     const imagens = container.querySelectorAll("img");
     const miniaturas = document.querySelectorAll(".miniatura-item");
 
     imagens.forEach(img => img.classList.remove("ativa"));
     miniaturas.forEach(min => min.classList.remove("ativa"));
 
-    imagens[indexAlvo].classList.add("ativa");
-    miniaturas[indexAlvo].classList.add("ativa");
+    if (imagens[indexAlvo]) imagens[indexAlvo].classList.add("ativa");
+    if (miniaturas[indexAlvo]) miniaturas[indexAlvo].classList.add("ativa");
 };
 
 window.mudarImagemRelacionada = function (event, indexProd, direcao) {
     event.stopPropagation();
     const galeria = document.getElementById(`galeria-rel-${indexProd}`);
+    if (!galeria) return;
     const imagens = galeria.querySelectorAll("img");
     let indexAtual = Array.from(imagens).findIndex(img => img.classList.contains("ativa"));
+    if (indexAtual === -1) indexAtual = 0;
 
     imagens[indexAtual].classList.remove("ativa");
 
